@@ -1,0 +1,9 @@
+services:
+  ping-monitor:
+    build: .
+    container_name: ping-monitor
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data

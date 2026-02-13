@@ -6,6 +6,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from typing import Optional
 
 import requests
@@ -134,21 +135,18 @@ def main():
         logger.error("CHECK_INTERVAL_SECONDS must be an integer")
         sys.exit(1)
 
-    tz = os.environ.get("TZ", "Europe/Kiev")
-    os.environ["TZ"] = tz
-    try:
-        time.tzset()
-    except AttributeError:
-        pass
+    tz_name = os.environ.get("TZ", "Europe/Kiev")
+    os.environ["TZ"] = tz_name
+    tz = ZoneInfo(tz_name)
 
     logger.info(f"Starting ping monitor for {target_ip}")
-    logger.info(f"Check interval: {interval}s, Timezone: {tz}")
+    logger.info(f"Check interval: {interval}s, Timezone: {tz_name}")
 
     state = load_state()
     if state:
         current_status = state["status"]
         changed_at = state["changed_at"]
-        logger.info(f"Loaded state: {current_status} since {datetime.fromtimestamp(changed_at)}")
+        logger.info(f"Loaded state: {current_status} since {datetime.fromtimestamp(changed_at, tz=tz)}")
     else:
         current_status = None
         changed_at = None
@@ -167,7 +165,7 @@ def main():
         elif new_status != current_status:
             duration = now - changed_at
             duration_str = format_duration(duration)
-            time_str = datetime.now().strftime("%H:%M")
+            time_str = datetime.now(tz=tz).strftime("%H:%M")
 
             if new_status == "DOWN":
                 message = f"{time_str} Світло зникло\nВоно було {duration_str}"
